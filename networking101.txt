@@ -1,0 +1,91 @@
+
+https://codelabs.developers.google.com/codelabs/cloud-networking-101/index.html?index=..%2F..%2Findex#2
+
+mkdir networking101
+cd networking101
+gsutil cp gs://networking101/* .
+
+if you list files in the networking101 folder you should see a set of .yaml and .jinja files used for simpler deployment of resources. 
+Now create the initial deployment with the following command:
+
+
+gcloud deployment-manager deployments create networking101  \
+--config networking-lab.yaml
+
+google745339_student@qwiklabs-gcp-19e1e487a1318529:~/networking101$ gcloud deployment-manager deployments create networking101  \
+> --config networking-lab.yaml
+The fingerprint of the deployment is F6qPKB4mCozF-XnzXhbnYA==
+Waiting for create [operation-1532695485882-571fa79fc1e90-2297e860-33f06582]...done.
+Create operation operation-1532695485882-571fa79fc1e90-2297e860-33f06582 completed successfully.
+NAME           TYPE                   STATE      ERRORS  INTENT
+asia-east1     compute.v1.subnetwork  COMPLETED  []
+asia1-vm       compute.v1.instance    COMPLETED  []
+e1-vm          compute.v1.instance    COMPLETED  []
+eu1-vm         compute.v1.instance    COMPLETED  []
+europe-west1   compute.v1.subnetwork  COMPLETED  []
+networking101  compute.v1.network     COMPLETED  []
+us-east1       compute.v1.subnetwork  COMPLETED  []
+us-west1-s1    compute.v1.subnetwork  COMPLETED  []
+us-west1-s2    compute.v1.subnetwork  COMPLETED  []
+w1-vm          compute.v1.instance    COMPLETED  []
+w2-vm          compute.v1.instance    COMPLETED  []
+google745339_student@qwiklabs-gcp-19e1e487a1318529:~/networking101$
+
+Note: If you check out the Deployment Manager script you can see that the w2-vm has the internal IP manually set to 10.11.0.100 while all the other IPs are automatically assigned.
+
+Try to connect to one of the VMs by clicking on the SSH button on the Console.
+
+After a long wait, you should see that the connection fails with an error message like this:
+
+Connection Failed
+We are unable to connect to the VM on port 22. Learn more about possible causes of this issue.
+
+This is because there are not Firewall rules defined for standard ports *22,3399,icmp,etc.
+"As the default policy inside a network *VPC* is deny, all traffic is currently disallowed by the firewalls."
+
+Since we will manually create firewall rules later in the lab, for now we will adjust our Deployment Manager script to allow all traffic inside the network as well as SSH and ICMP from anywhere.
+
+Then add the following code snippet to the bottom of the file:
+
+networking-lab-snippet.yaml
+# Add this to the bottom of networking-lab.yaml to enable the
+# firewalling configuration
+
+
+- name: networking-firewall
+  type: firewall-template.jinja
+  properties:
+    network: networking101
+    
+cat networking-lab-snippet.yaml >> networking-lab.yaml 
+
+Now, update the deployment with the following command:
+
+gcloud deployment-manager deployments update networking101 \
+--config networking-lab.yaml
+
+google745339_student@qwiklabs-gcp-19e1e487a1318529:~/networking101$ gcloud deployment-manager deployments update networking101 \
+> --config networking-lab.yaml
+The fingerprint of the deployment is t-o6GGYwRKnmqTC2BbKFbw==
+Waiting for update [operation-1532696093422-571fa9e3271b1-de155852-31360d76]...done.
+Update operation operation-1532696093422-571fa9e3271b1-de155852-31360d76 completed successfully.
+NAME                                   TYPE                   STATE      ERRORS  INTENT
+asia-east1                             compute.v1.subnetwork  COMPLETED  []
+asia1-vm                               compute.v1.instance    COMPLETED  []
+e1-vm                                  compute.v1.instance    COMPLETED  []
+eu1-vm                                 compute.v1.instance    COMPLETED  []
+europe-west1                           compute.v1.subnetwork  COMPLETED  []
+networking101                          compute.v1.network     COMPLETED  []
+networking101-firewall-allow-icmp      compute.v1.firewall    COMPLETED  []
+networking101-firewall-allow-internal  compute.v1.firewall    COMPLETED  []
+networking101-firewall-allow-ssh       compute.v1.firewall    COMPLETED  []
+us-east1                               compute.v1.subnetwork  COMPLETED  []
+us-west1-s1                            compute.v1.subnetwork  COMPLETED  []
+us-west1-s2                            compute.v1.subnetwork  COMPLETED  []
+w1-vm                                  compute.v1.instance    COMPLETED  []
+w2-vm                                  compute.v1.instance    COMPLETED  []
+google745339_student@qwiklabs-gcp-19e1e487a1318529:~/networking101$
+
+
+
+
